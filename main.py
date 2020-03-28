@@ -1,5 +1,10 @@
+# coding=utf-8
 import sys
 import cv2
+import argparse
+import os
+import sys
+import subprocess
 
 from run import process
 
@@ -7,39 +12,45 @@ from run import process
 main.py
 
  How to run:
- python3 main.py
+ python main.py
 
 """
 
-def main2():
-	dress = cv2.imread("input.png")
+def open_file(filepath):
+    if sys.platform == "win32":
+        os.startfile(filepath)
+    else:
+        opener ="open" if sys.platform == "darwin" else "xdg-open"
+        subprocess.call([opener, filepath])
 
-	watermark = process(dress)
+def main(inputpath, outpath, show):
+	automatic_show_image = show.lower() == "true"
+	if isinstance(inputpath, list):
+		for item in inputpath:
+			watermark = deep_nude_process(item)
+			cv2.imwrite("output_"+item, watermark)
+			if automatic_show_image:
+				open_file("output_"+item)
+	else:
+		watermark = deep_nude_process(inputpath)
+		cv2.imwrite(outputpath, watermark)
+		if automatic_show_image:
+			open_file(outputpath)
 
-	cv2.imwrite("output.png",watermark)
-
-
-# ------------------------------------------------- main()
-def main(i):
-
-	#Read input image
-	dress = cv2.imread("j"+str(i)+".jpg")
-
-	#Process
-	watermark = process(dress)
-
-	# Write output image
-	cv2.imwrite("./out/oj"+str(i)+"out.jpg", watermark)
-
-	#Exit
-	#sys.exit()
+def deep_nude_process(item):
+    print('Processing {}'.format(item))
+    dress = cv2.imread(item)
+    h = dress.shape[0]
+    w = dress.shape[1]
+    dress = cv2.resize(dress, (512,512), interpolation=cv2.INTER_CUBIC)
+    watermark = process(dress)
+    watermark = cv2.resize(watermark, (w,h), interpolation=cv2.INTER_CUBIC)
+    return watermark
 
 if __name__ == '__main__':
-	#main(5)
-	#main(6)
-	#main(7)
-	#main(8)
-	#main(9)
-	#main(10)
-	#main(11)
-	main2()
+	parser = argparse.ArgumentParser(description="simple deep nude script tool")
+	parser.add_argument("-i", "--input", action="store", nargs = "*", default="input.png", help = "Use to enter input one or more files's name")
+	parser.add_argument("-o", "--output", action="store", default="output.png", help = "Use to enter output file name")
+	parser.add_argument("-s", "--show", action="store", default="true", help = "Use to automatically display or not display generated images")
+	inputpath, outputpath, show = parser.parse_args().input, parser.parse_args().output, parser.parse_args().show
+	main(inputpath, outputpath, show)
